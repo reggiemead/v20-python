@@ -1,9 +1,7 @@
 import ujson as json
 from v20.base_entity import BaseEntity
-from v20.base_entity import EntityDict
 from v20.request import Request
 from v20 import spec_properties
-
 
 
 class ClientPrice(BaseEntity):
@@ -31,61 +29,61 @@ class ClientPrice(BaseEntity):
         Create a new ClientPrice instance
         """
         super(ClientPrice, self).__init__()
- 
+
         #
         # The string "PRICE". Used to identify the a Price object when found in
         # a stream.
         #
         self.type = kwargs.get("type", "PRICE")
- 
+
         #
         # The Price's Instrument.
         #
         self.instrument = kwargs.get("instrument")
- 
+
         #
         # The date/time when the Price was created
         #
         self.time = kwargs.get("time")
- 
+
         #
         # The status of the Price.
         #
         self.status = kwargs.get("status")
- 
+
         #
         # Flag indicating if the Price is tradeable or not
         #
         self.tradeable = kwargs.get("tradeable")
- 
+
         #
         # The list of prices and liquidity available on the Instrument's bid
         # side. It is possible for this list to be empty if there is no bid
         # liquidity currently available for the Instrument in the Account.
         #
         self.bids = kwargs.get("bids")
- 
+
         #
         # The list of prices and liquidity available on the Instrument's ask
         # side. It is possible for this list to be empty if there is no ask
         # liquidity currently available for the Instrument in the Account.
         #
         self.asks = kwargs.get("asks")
- 
+
         #
         # The closeout bid Price. This Price is used when a bid is required to
         # closeout a Position (margin closeout or manual) yet there is no bid
         # liquidity. The closeout bid is never used to open a new position.
         #
         self.closeoutBid = kwargs.get("closeoutBid")
- 
+
         #
         # The closeout ask Price. This Price is used when a ask is required to
         # closeout a Position (margin closeout or manual) yet there is no ask
         # liquidity. The closeout ask is never used to open a new position.
         #
         self.closeoutAsk = kwargs.get("closeoutAsk")
- 
+
         #
         # The factors used to convert quantities of this price's Instrument's
         # quote currency into a quantity of the Account's home currency. When
@@ -93,7 +91,7 @@ class ClientPrice(BaseEntity):
         # (regardless of its value), this field will not be present.
         #
         self.quoteHomeConversionFactors = kwargs.get("quoteHomeConversionFactors")
- 
+
         #
         # Representation of how many units of an Instrument are available to be
         # traded by an Order depending on its postionFill option.
@@ -175,7 +173,7 @@ class QuoteHomeConversionFactors(BaseEntity):
         Create a new QuoteHomeConversionFactors instance
         """
         super(QuoteHomeConversionFactors, self).__init__()
- 
+
         #
         # The factor used to convert a positive amount of the Price's
         # Instrument's quote currency into a positive amount of the Account's
@@ -183,7 +181,7 @@ class QuoteHomeConversionFactors(BaseEntity):
         # units by the conversion factor.
         #
         self.positiveUnits = kwargs.get("positiveUnits")
- 
+
         #
         # The factor used to convert a negative amount of the Price's
         # Instrument's quote currency into a negative amount of the Account's
@@ -243,12 +241,12 @@ class HomeConversions(BaseEntity):
         Create a new HomeConversions instance
         """
         super(HomeConversions, self).__init__()
- 
+
         #
         # The currency to be converted into the home currency.
         #
         self.currency = kwargs.get("currency")
- 
+
         #
         # The factor used to convert any gains for an Account in the specified
         # currency into the Account's home currency. This would include
@@ -256,12 +254,12 @@ class HomeConversions(BaseEntity):
         # performed by multiplying the positive P/L by the conversion factor.
         #
         self.accountGain = kwargs.get("accountGain")
- 
+
         #
         # The string representation of a decimal number.
         #
         self.accountLoss = kwargs.get("accountLoss")
- 
+
         #
         # The factor used to convert a Position or Trade Value in the specified
         # currency into the Account's home currency. Conversion is performed by
@@ -324,12 +322,12 @@ class PricingHeartbeat(BaseEntity):
         Create a new PricingHeartbeat instance
         """
         super(PricingHeartbeat, self).__init__()
- 
+
         #
         # The string "HEARTBEAT"
         #
         self.type = kwargs.get("type", "HEARTBEAT")
- 
+
         #
         # The date/time when the Heartbeat was created.
         #
@@ -363,219 +361,6 @@ class EntitySpec(object):
 
     def __init__(self, ctx):
         self.ctx = ctx
-
-
-    def base_prices(
-        self,
-        **kwargs
-    ):
-        """
-        Get pricing information for a specified instrument. Accounts are not
-        associated in any way with this endpoint.
-
-        Args:
-            time:
-                The time at which the desired price for each instrument is in
-                effect. The current price for each instrument is returned if no
-                time is provided.
-
-        Returns:
-            v20.response.Response containing the results from submitting the
-            request
-        """
-
-        request = Request(
-            'GET',
-            '/v3/pricing'
-        )
-
-        request.set_param(
-            'time',
-            kwargs.get('time')
-        )
-
-        response = self.ctx.request(request)
-
-
-        if response.content_type is None:
-            return response
-
-        if not response.content_type.startswith("application/json"):
-            return response
-
-        jbody = json.loads(response.raw_body)
-
-        parsed_body = {}
-
-        #
-        # Parse responses as defined by the API specification
-        #
-        if str(response.status) == "200":
-            if jbody.get('prices') is not None:
-                parsed_body['prices'] = [
-                    self.ctx.pricing_common.Price.from_dict(d, self.ctx)
-                    for d in jbody.get('prices')
-                ]
-
-        elif str(response.status) == "400":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        elif str(response.status) == "401":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        elif str(response.status) == "404":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        elif str(response.status) == "405":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        #
-        # Unexpected response status
-        #
-        else:
-            parsed_body = jbody
-
-        response.body = parsed_body
-
-        return response
-
-
-    def get_price_range(
-        self,
-        instrument,
-        **kwargs
-    ):
-        """
-        Get pricing information for a specified range of prices. Accounts are
-        not associated in any way with this endpoint.
-
-        Args:
-            instrument:
-                Name of the Instrument
-            fromTime:
-                The start of the time range to fetch prices for.
-            toTime:
-                The end of the time range to fetch prices for. The current time
-                is used if this parameter is not provided.
-
-        Returns:
-            v20.response.Response containing the results from submitting the
-            request
-        """
-
-        request = Request(
-            'GET',
-            '/v3/pricing/range'
-        )
-
-        request.set_path_param(
-            'instrument',
-            instrument
-        )
-
-        request.set_param(
-            'from',
-            kwargs.get('fromTime')
-        )
-
-        request.set_param(
-            'to',
-            kwargs.get('toTime')
-        )
-
-        response = self.ctx.request(request)
-
-
-        if response.content_type is None:
-            return response
-
-        if not response.content_type.startswith("application/json"):
-            return response
-
-        jbody = json.loads(response.raw_body)
-
-        parsed_body = {}
-
-        #
-        # Parse responses as defined by the API specification
-        #
-        if str(response.status) == "200":
-            if jbody.get('prices') is not None:
-                parsed_body['prices'] = [
-                    self.ctx.pricing_common.Price.from_dict(d, self.ctx)
-                    for d in jbody.get('prices')
-                ]
-
-        elif str(response.status) == "400":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        elif str(response.status) == "401":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        elif str(response.status) == "404":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        elif str(response.status) == "405":
-            if jbody.get('errorCode') is not None:
-                parsed_body['errorCode'] = \
-                    jbody.get('errorCode')
-
-            if jbody.get('errorMessage') is not None:
-                parsed_body['errorMessage'] = \
-                    jbody.get('errorMessage')
-
-        #
-        # Unexpected response status
-        #
-        else:
-            parsed_body = jbody
-
-        response.body = parsed_body
-
-        return response
-
 
     def get(
         self,
@@ -641,7 +426,6 @@ class EntitySpec(object):
         )
 
         response = self.ctx.request(request)
-
 
         if response.content_type is None:
             return response
@@ -718,7 +502,6 @@ class EntitySpec(object):
         response.body = parsed_body
 
         return response
-
 
     def stream(
         self,
@@ -800,16 +583,13 @@ class EntitySpec(object):
                     self.ctx.pricing.ClientPrice.from_dict(j, self.ctx)
                 )
 
-                
         request.set_line_parser(
             Parser(self.ctx)
         )
 
         response = self.ctx.request(request)
 
-
         return response
-
 
     def candles(
         self,
@@ -943,7 +723,6 @@ class EntitySpec(object):
 
         response = self.ctx.request(request)
 
-
         if response.content_type is None:
             return response
 
@@ -1017,4 +796,3 @@ class EntitySpec(object):
         response.body = parsed_body
 
         return response
-
